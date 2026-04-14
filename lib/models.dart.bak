@@ -1,0 +1,134 @@
+import 'dart:io';
+import 'package:gamepads/gamepads.dart';
+
+// --- SHARED ENUMS ---
+enum ControllerType { virtual, bluetooth, usb }
+
+// --- PART 1: THE UNIFIED WORKSTATION PROFILE ---
+class XodosProfile {
+  final String id;
+  final String name;
+  final int qualityLevel; 
+  
+  final ControllerType controllerType;
+  final String? bluetoothDeviceId;
+  final Map<String, int> buttonMapping; 
+  final Map<String, String> customEnv; 
+  final List<XodosFile> savedFiles;    
+
+  XodosProfile({
+    required this.id,
+    required this.name,
+    this.qualityLevel = 1,
+    this.controllerType = ControllerType.virtual,
+    this.bluetoothDeviceId,
+    this.buttonMapping = const {},
+    this.customEnv = const {},
+    this.savedFiles = const [],
+  });
+
+  // --- JSON Logic: Teaches XoDos how to turn profiles into text for saving ---
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'quality': qualityLevel,
+    'controller': controllerType.index,
+    'deviceId': bluetoothDeviceId,
+    'mapping': buttonMapping,
+    'env': customEnv,
+  };
+
+  factory XodosProfile.fromJson(Map<String, dynamic> json) => XodosProfile(
+    id: json['id'] ?? '',
+    name: json['name'] ?? 'Unknown Workstation',
+    qualityLevel: json['quality'] ?? 1,
+    controllerType: ControllerType.values[json['controller'] ?? 0],
+    bluetoothDeviceId: json['deviceId'],
+    buttonMapping: Map<String, int>.from(json['mapping'] ?? {}),
+    customEnv: Map<String, String>.from(json['env'] ?? {}),
+  );
+
+  static XodosProfile createNew({
+    required String name,
+    required int quality,
+    String? deviceId,
+    Map<String, String> extraEnv = const {},
+    Map<String, int> mapping = const {},
+  }) {
+    return XodosProfile(
+      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      name: name,
+      qualityLevel: quality,
+      controllerType: deviceId != null ? ControllerType.bluetooth : ControllerType.virtual,
+      bluetoothDeviceId: deviceId,
+      customEnv: extraEnv,
+      buttonMapping: mapping,
+    );
+  }
+}
+
+// --- PART 2: THE ZERO-KNOWLEDGE CLOUD STORAGE ---
+class XodosStorageProvider {
+  final String providerId;     
+  final String? oauthToken;
+  final int freeQuotaGB;
+  final int usedGB;
+  final bool isConnected;
+
+  XodosStorageProvider({
+    required this.providerId,
+    this.oauthToken,
+    this.freeQuotaGB = 15,
+    this.usedGB = 0,
+    this.isConnected = false,
+  });
+}
+
+class XodosFileChunk {
+  final String chunkId;
+  final String fileId;
+  final String providerId;
+  final String remotePath;
+  final int size;
+  final String checksum;
+  final String encryptionKey;
+
+  XodosFileChunk({
+    required this.chunkId,
+    required this.fileId,
+    required this.providerId,
+    required this.remotePath,
+    required this.size,
+    required this.checksum,
+    required this.encryptionKey,
+  });
+}
+
+class XodosFile {
+  final String id;
+  final String name;
+  final int totalSize;
+  final List<XodosFileChunk> chunks;
+  final String masterKey;
+  final DateTime createdAt;
+
+  XodosFile({
+    required this.id,
+    required this.name,
+    required this.totalSize,
+    required this.chunks,
+    required this.masterKey,
+    required this.createdAt,
+  });
+}
+
+// --- PART 3: MASTER DATA LISTS ---
+List<XodosProfile> userAdditions = [];
+
+List<XodosStorageProvider> connectedClouds = [
+  XodosStorageProvider(providerId: 'google', freeQuotaGB: 15),
+  XodosStorageProvider(providerId: 'onedrive', freeQuotaGB: 5),
+  XodosStorageProvider(providerId: 'dropbox', freeQuotaGB: 2),
+  XodosStorageProvider(providerId: 'cloudgate', freeQuotaGB: 1000), 
+];
+ 

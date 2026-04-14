@@ -1,0 +1,65 @@
+import 'package:flutter/material.dart';
+// FIXED: This now matches your file name in the screenshot
+import 'models.dart'; 
+
+class XodosDashboard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("XoDos Workstation"),
+        backgroundColor: Colors.blueGrey[900],
+      ),
+      body: userAdditions.isEmpty 
+        ? Center(
+            child: Text(
+              "No additions yet.\nTap the + button to create one!",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+          )
+        : ListView.builder(
+            padding: EdgeInsets.all(10),
+            itemCount: userAdditions.length,
+            itemBuilder: (context, index) {
+              final profile = userAdditions[index];
+              return Card(
+                elevation: 4,
+                margin: EdgeInsets.symmetric(vertical: 8),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Colors.blueAccent,
+                    child: Text(
+                      "${profile.qualityLevel}",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                  title: Text(
+                    profile.name,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    profile.bluetoothDeviceId != null 
+                        ? "Linked: ${profile.bluetoothDeviceId}" 
+                        : "Virtual Controls Only",
+                  ),
+                  trailing: Icon(Icons.play_circle_fill, color: Colors.green, size: 32),
+                  onTap: () {
+                    // This launches the game profile
+                    print("Launching XoDos Profile: ${profile.name}");
+                  },
+                ),
+              );
+            },
+          ),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.blueAccent,
+        child: Icon(Icons.add, color: Colors.white),
+        onPressed: () {
+          // Navigates to your Add Profile Screen
+          Navigator.pushNamed(context, '/add');
+        },
+      ),
+    );
+  }
+}

@@ -1,0 +1,38 @@
+import 'package:flutter/material.dart';
+import '../models/xodos_config.dart';
+
+class XodosDashboard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text("XoDos Workstation")),
+      body: userAdditions.isEmpty 
+        ? Center(child: Text("No additions yet. Tap + to start!"))
+        : ListView.builder(
+            itemCount: userAdditions.length,
+            itemBuilder: (context, index) {
+              final profile = userAdditions[index];
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(child: Text("${profile.qualityLevel}")),
+                  title: Text(profile.name),
+                  subtitle: Text(profile.bluetoothDeviceId != null ? "Bluetooth Linked" : "Virtual Controls"),
+                  trailing: Icon(Icons.play_arrow),
+                  onTap: () {
+                    // This is where the game launches!
+                    print("Launching ${profile.name}...");
+                  },
+                ),
+              );
+            },
+          ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {
+          // Navigates to the "Add" screen we built
+          Navigator.pushNamed(context, '/add');
+        },
+      ),
+    );
+  }
+}
