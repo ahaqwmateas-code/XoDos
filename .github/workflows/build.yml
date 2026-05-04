@@ -16,8 +16,7 @@ jobs:
       
       - uses: subosito/flutter-action@v2
         with:
-          # Using the latest beta ensures we get Dart 3.7.x
-          channel: 'beta'
+          channel: 'master' # This gets you the 3.7+ SDK you need
 
       - name: Build APK
         run: |
@@ -27,5 +26,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Build
+          name: XoDos-Final-Build
           path: build/app/outputs/flutter-apk/app-release.apk
