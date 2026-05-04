@@ -1,49 +1,63 @@
-name: Flutter Build APK
+name: Build APK
 
 on:
   push:
-    branches: [ master ]
+    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-      
+
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'master'
+          flutter-version: '3.27.0'  # Use stable, not master
+          channel: 'stable'
 
-      - name: Repair, Configure JitPack, and Build
+      # 1. Create assets folder FIRST
+      - name: Prepare assets
+        run: mkdir -p assets
+
+      # 2. Generate Android files
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
+
+      # 3. NOW inject JitPack (after flutter create, so it doesn't get overwritten)
+      - name: Add JitPack repository
         run: |
-          # 1. Recreate platform files
-          flutter create --platforms=android .
-          
-          # 2. Fix the missing assets folder error
-          mkdir -p assets
-          
-          # 3. Bulletproof JitPack Injection using Python
-          python -c '
+          python3 -c '
+          import re
           f = "android/settings.gradle.kts"
           with open(f, "r") as file:
               c = file.read()
-          # This safely injects JitPack right below Maven
-          c = c.replace("mavenCentral()", "mavenCentral()\n        maven { url = uri(\"https://jitpack.io\") }")
+          # Add JitPack to pluginManagement.repositories AND dependencyResolutionManagement.repositories
+          c = c.replace(
+              "mavenCentral()",
+              "mavenCentral()\\n        maven { url = uri(\\\"https://jitpack.io\\\") }"
+          )
           with open(f, "w") as file:
               file.write(c)
           '
-          
-          # 4. Build the APK
-          flutter pub get
-          flutter build apk --release --tree-shake-icons
+          echo "=== settings.gradle.kts ==="
+          cat android/settings.gradle.kts
 
+      # 4. Get dependencies and build
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build Release APK
+        run: flutter build apk --release
+
+      # 5. Upload
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Final-Build
+          name: release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
