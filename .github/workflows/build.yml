@@ -1,44 +1,29 @@
-name: Build XoDos Fully Functional
-on: [push]
+name: Build XoDos
+on:
+  push:
+    branches: [ master ]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
-
-      - name: Setup Flutter (Stable)
-        uses: subosito/flutter-action@v2
+      - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-
-      - name: Configure Android Environment
+      - name: Force SDK 26
         run: |
-          # 1. Generate core platform files
           flutter create --platforms=android .
-          
-          # 2. Force SDK 26 in the local.properties file (Global Override)
           echo "flutter.minSdkVersion=26" > android/local.properties
-          echo "flutter.targetSdkVersion=33" >> android/local.properties
-          echo "flutter.compileSdkVersion=34" >> android/local.properties
-          
-          # 3. Ensure assets exist
-          mkdir -p assets
-          touch assets/.gitkeep
-
+          mkdir -p assets && touch assets/.gitkeep
       - name: Build APK
         run: |
           flutter pub get
-          # Building without the faulty flag
           flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload Finished App
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: XoDos-Final-APK
           path: build/app/outputs/flutter-apk/app-release.apk
