@@ -1,10 +1,6 @@
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-    }
-}
+// Root build.gradle - repositories are managed in settings.gradle
+// Do NOT add repositories here when using RepositoriesMode.FAIL_ON_PROJECT_REPOS
+
 rootProject.buildDir = '../build'
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
