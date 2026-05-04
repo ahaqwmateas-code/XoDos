@@ -24,11 +24,21 @@ jobs:
           # 1. Recreate platform files
           flutter create --platforms=android .
           
-          # 2. Inject JitPack into the newly created settings.gradle.kts
-          # This is the "Magic Fix" for the missing com.github files
-          sed -i '/mavenCentral()/a \        maven { url = uri("https://jitpack.io") }' android/settings.gradle.kts
+          # 2. Fix the missing assets folder error
+          mkdir -p assets
           
-          # 3. Build the APK
+          # 3. Bulletproof JitPack Injection using Python
+          python -c '
+          f = "android/settings.gradle.kts"
+          with open(f, "r") as file:
+              c = file.read()
+          # This safely injects JitPack right below Maven
+          c = c.replace("mavenCentral()", "mavenCentral()\n        maven { url = uri(\"https://jitpack.io\") }")
+          with open(f, "w") as file:
+              file.write(c)
+          '
+          
+          # 4. Build the APK
           flutter pub get
           flutter build apk --release --tree-shake-icons
 
