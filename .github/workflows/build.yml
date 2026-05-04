@@ -9,6 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -18,15 +19,17 @@ jobs:
         with:
           channel: 'master'
 
-      - name: Build APK
+      - name: Repair and Build
         run: |
-          # This forces the project to update its old Android files
+          # Recreate the missing platform files on the runner
+          flutter create --platforms=android .
+          
+          # Build the APK
           flutter pub get
-          flutter build apk --release --no-pub --tree-shake-icons
-        continue-on-error: false
+          flutter build apk --release --tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Master-Build
+          name: XoDos-Repaired-Build
           path: build/app/outputs/flutter-apk/app-release.apk
