@@ -11,7 +11,7 @@ class ServerListScreen extends StatefulWidget {
 
 class _ServerListScreenState extends State<ServerListScreen> {
   List<WorkstationProfile> servers = [
-    WorkstationProfile(id: '1', name: 'Main Workstation', host: '192.168.1.10', port: 5900, protocol: 'VNC', isActive: true),
+    WorkstationProfile(id: '1', name: 'Main Workstation', host: '127.0.0.1', port: 5900, protocol: 'VNC', isActive: true),
   ];
 
   @override
