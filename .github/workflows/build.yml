@@ -8,6 +8,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=512m"
+    
     steps:
       - uses: actions/checkout@v4
 
@@ -18,24 +21,35 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.9'
+          flutter-version: '3.27.0'
           channel: 'stable'
 
-      - name: Prepare assets
-        run: mkdir -p assets
-
-      - name: Ensure JitPack repository
+      - name: Prepare assets and memory
         run: |
-          if ! grep -q "jitpack.io" android/settings.gradle; then
-            sed -i 's/mavenCentral()/mavenCentral()\\n        maven { url = uri(\"https:\\/\\/jitpack.io\") }/g' android/settings.gradle
-          fi
-          cat android/settings.gradle
+          mkdir -p assets
+          mkdir -p android
+          echo "org.gradle.jvmargs=-Xmx4096m" >> android/gradle.properties
+
+      - name: Generate Android platform files
+        run: flutter create --platforms=android .
+
+      - name: Add JitPack repository
+        run: |
+          python3 -c '
+          f = "android/settings.gradle.kts"
+          with open(f, "r") as file:
+              c = file.read()
+          new_line = "mavenCentral()\n        maven { url = uri(\"https://jitpack.io\") }"
+          c = c.replace("mavenCentral()", new_line)
+          with open(f, "w") as file:
+              file.write(c)
+          '
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-daemon
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
