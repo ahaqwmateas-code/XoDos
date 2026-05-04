@@ -20,13 +20,13 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Global Build Configuration
+      - name: Build Logic Fix
         run: |
           mkdir -p assets
           touch assets/.gitkeep
           flutter create --platforms android --org bin.mt .
 
-          # Fix the ROOT build.gradle to include JitPack for ALL plugins
+          # Fix the ROOT build.gradle
           cat <<KTS > android/build.gradle.kts
           allprojects {
               repositories {
@@ -37,7 +37,7 @@ jobs:
           }
           KTS
 
-          # Create the App build.gradle.kts with explicit versions
+          # Fix the APP build.gradle.kts with JVM Target 17
           cat <<KTS > android/app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -56,6 +56,16 @@ jobs:
                   versionCode = 1
                   versionName = "1.0.0"
               }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
               buildTypes {
                   release {
                       isMinifyEnabled = false
@@ -70,12 +80,12 @@ jobs:
           }
           KTS
 
-          # Apply the Manifest Overrides
+          # Manifest Overrides
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/<manifest/<manifest xmlns:tools="http:\/\/schemas.android.com\/tools"/' $MANIFEST
           sed -i 's/<uses-sdk[^>]*\/>/<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" tools:overrideLibrary="com.termux.x11, com.gaurav.avnc, com.example.avnc_flutter, com.example.x11_flutter" \/>/' $MANIFEST
 
-      - name: Final Build
+      - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons --no-shrink
@@ -83,5 +93,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: xodos-build-success
+          name: xodos-build
           path: build/app/outputs/flutter-apk/app-release.apk
