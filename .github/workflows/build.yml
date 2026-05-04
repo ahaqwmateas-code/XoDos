@@ -15,19 +15,54 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Force Global Version 26
+      - name: Configure Android Versioning
         run: |
           flutter create --platforms=android .
-          # Force every single gradle file to use minSdk 26
-          find android -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/g' {} +
-          find android -name "build.gradle" -exec sed -i 's/minSdk [0-9]*/minSdk 26/g' {} +
+          # Overwrite the build.gradle with a clean version that uses variables
+          cat << 'INNER_EOF' > android/app/build.gradle
+          def localProperties = new Properties()
+          def localPropertiesFile = rootProject.file('local.properties')
+          if (localPropertiesFile.exists()) {
+              localPropertiesFile.withReader('UTF-8') { reader ->
+                  localProperties.load(reader)
+              }
+          }
+
+          def flutterRoot = localProperties.getProperty('flutter.sdk')
+          if (flutterRoot == null) {
+              throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
+          }
+
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+          apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
+
+          android {
+              namespace "com.termux.x11"
+              compileSdkVersion 34
+              ndkVersion "27.0.12077973"
+
+              defaultConfig {
+                  applicationId "com.termux.x11"
+                  minSdkVersion 26
+                  targetSdkVersion 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+              buildTypes {
+                  release {
+                      signingConfig signingConfigs.debug
+                  }
+              }
+          }
+
+          dependencies {
+              implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+          }
+          INNER_EOF
           
-          # Force the Android Manifest to use 26
-          find android -name "AndroidManifest.xml" -exec sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="26"/g' {} +
-          
-          # Create local.properties as a backup
-          echo "flutter.minSdkVersion=26" > android/local.properties
-          
+          # Ensure local.properties exists for the build
+          echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           mkdir -p assets && touch assets/.gitkeep
 
       - name: Build APK
