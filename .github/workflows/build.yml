@@ -87,4 +87,4 @@ jobs:
         with:
           name: XoDos-Final-Build
           # This wildcard path will find the APK no matter where Gradle put it
-          path: "**/build/app/outputs/flutter-apk/*.apk"
+          path: "android/app/build/outputs/apk/release/*.apk"
