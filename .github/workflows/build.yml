@@ -20,13 +20,12 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Build Logic Fix
+      - name: Build Preparation
         run: |
           mkdir -p assets
           touch assets/.gitkeep
           flutter create --platforms android --org bin.mt .
-
-          # Fix the ROOT build.gradle
+          
           cat <<KTS > android/build.gradle.kts
           allprojects {
               repositories {
@@ -37,7 +36,6 @@ jobs:
           }
           KTS
 
-          # Fix the APP build.gradle.kts with JVM Target 17
           cat <<KTS > android/app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -48,7 +46,6 @@ jobs:
               namespace = "bin.mt.xodos"
               compileSdk = 36
               ndkVersion = "28.2.13676358"
-              
               defaultConfig {
                   applicationId = "bin.mt.xodos"
                   minSdk = 26
@@ -56,16 +53,11 @@ jobs:
                   versionCode = 1
                   versionName = "1.0.0"
               }
-
               compileOptions {
                   sourceCompatibility = JavaVersion.VERSION_17
                   targetCompatibility = JavaVersion.VERSION_17
               }
-
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-
+              kotlinOptions { jvmTarget = "17" }
               buildTypes {
                   release {
                       isMinifyEnabled = false
@@ -80,18 +72,19 @@ jobs:
           }
           KTS
 
-          # Manifest Overrides
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/<manifest/<manifest xmlns:tools="http:\/\/schemas.android.com\/tools"/' $MANIFEST
           sed -i 's/<uses-sdk[^>]*\/>/<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" tools:overrideLibrary="com.termux.x11, com.gaurav.avnc, com.example.avnc_flutter, com.example.x11_flutter" \/>/' $MANIFEST
 
-      - name: Build APK
+      - name: Compile APK
         run: |
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons --no-shrink
-        
-      - name: Upload APK
+          # We use assembleRelease directly to bypass the 'file not found' helper error
+          cd android && ./gradlew assembleRelease
+
+      - name: Upload Finished APK
         uses: actions/upload-artifact@v4
         with:
-          name: xodos-build
-          path: build/app/outputs/flutter-apk/app-release.apk
+          name: XoDos-Final-Build
+          # This wildcard path will find the APK no matter where Gradle put it
+          path: "**/build/app/outputs/flutter-apk/*.apk"
