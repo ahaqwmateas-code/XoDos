@@ -14,15 +14,27 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Force SDK 26
+
+      - name: Force Global Version 26
         run: |
           flutter create --platforms=android .
+          # Force every single gradle file to use minSdk 26
+          find android -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/g' {} +
+          find android -name "build.gradle" -exec sed -i 's/minSdk [0-9]*/minSdk 26/g' {} +
+          
+          # Force the Android Manifest to use 26
+          find android -name "AndroidManifest.xml" -exec sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="26"/g' {} +
+          
+          # Create local.properties as a backup
           echo "flutter.minSdkVersion=26" > android/local.properties
+          
           mkdir -p assets && touch assets/.gitkeep
+
       - name: Build APK
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons
+          
       - uses: actions/upload-artifact@v4
         with:
           name: XoDos-Final-APK
