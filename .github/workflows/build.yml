@@ -18,44 +18,25 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.27.0'  # Use stable, not master
+          flutter-version: '3.29.0'
           channel: 'stable'
 
-      # 1. Create assets folder FIRST
       - name: Prepare assets
         run: mkdir -p assets
 
-      # 2. Generate Android files
-      - name: Generate Android platform files
-        run: flutter create --platforms=android .
-
-      # 3. NOW inject JitPack (after flutter create, so it doesn't get overwritten)
-      - name: Add JitPack repository
+      - name: Ensure JitPack repository
         run: |
-          python3 -c '
-          import re
-          f = "android/settings.gradle.kts"
-          with open(f, "r") as file:
-              c = file.read()
-          # Add JitPack to pluginManagement.repositories AND dependencyResolutionManagement.repositories
-          c = c.replace(
-              "mavenCentral()",
-              "mavenCentral()\\n        maven { url = uri(\\\"https://jitpack.io\\\") }"
-          )
-          with open(f, "w") as file:
-              file.write(c)
-          '
-          echo "=== settings.gradle.kts ==="
-          cat android/settings.gradle.kts
+          if ! grep -q "jitpack.io" android/settings.gradle; then
+            sed -i 's/mavenCentral()/mavenCentral()\\n        maven { url = uri(\"https:\\/\\/jitpack.io\") }/g' android/settings.gradle
+          fi
+          cat android/settings.gradle
 
-      # 4. Get dependencies and build
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Release APK
         run: flutter build apk --release
 
-      # 5. Upload
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
