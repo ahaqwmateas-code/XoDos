@@ -29,6 +29,15 @@ jobs:
       - name: Generate Android platform files
         run: flutter create --platforms=android .
 
+      - name: Force Min SDK 26 and Fix Assets
+        run: |
+          # Increase minSdkVersion to 26 to match termux-x11 requirements
+          sed -i 's/minSdkVersion .*/minSdkVersion 26/' android/app/build.gradle
+          
+          # Create the missing assets directory so the build doesn't complain
+          mkdir -p assets
+          touch assets/.gitkeep
+
       - name: Add JitPack repository
         run: |
           python3 -c '
@@ -47,7 +56,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Release APK
-        run: flutter build apk --release
+        run: flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
