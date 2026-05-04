@@ -20,11 +20,15 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Configure Android Project
+      - name: Force Build Logic
         run: |
+          # Create missing assets folder to stop that error
+          mkdir -p assets
+          touch assets/.gitkeep
+          
           flutter create --platforms android --org bin.mt .
           
-          # Create corrected build.gradle.kts
+          # Create build.gradle.kts with the NEW SDK 36 and NDK 28 requirements
           cat <<KTS > android/app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -33,11 +37,13 @@ jobs:
           }
           android {
               namespace = "bin.mt.xodos"
-              compileSdk = 34
+              compileSdk = 36
+              ndkVersion = "28.2.13676358"
+              
               defaultConfig {
                   applicationId = "bin.mt.xodos"
                   minSdk = 26
-                  targetSdk = 34
+                  targetSdk = 36
                   versionCode = 1
                   versionName = "1.0.0"
               }
@@ -56,21 +62,22 @@ jobs:
           }
           dependencies {
               implementation("com.github.xodiosx:termux-x11:1.0.5.r7")
+              implementation("com.github.xodiosx:avnc:1.0.2")
           }
           KTS
 
-          # Fix Manifest for Overrides
+          # Apply the Nuclear Manifest Override
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/<manifest/<manifest xmlns:tools="http:\/\/schemas.android.com\/tools"/' $MANIFEST
-          sed -i 's/<uses-sdk[^>]*\/>/<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="34" tools:overrideLibrary="com.termux.x11, com.gaurav.avnc" \/>/' $MANIFEST
+          sed -i 's/<uses-sdk[^>]*\/>/<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" tools:overrideLibrary="com.termux.x11, com.gaurav.avnc, com.example.avnc_flutter, com.example.x11_flutter" \/>/' $MANIFEST
 
-      - name: Build APK
+      - name: Build
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons --no-shrink
         
-      - name: Upload Artifact
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: xodos-release-apk
+          name: xodos-final-apk
           path: build/app/outputs/flutter-apk/app-release.apk
