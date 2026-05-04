@@ -17,12 +17,18 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Apply Fixes and Generate Files
+      - name: Force Global SDK Fix
         run: |
+          # 1. Generate files
           flutter create --platforms=android .
-          # Fix the SDK version for termux-x11 compatibility
+          
+          # 2. Force minSdkVersion 26 in the build script
           sed -i 's/minSdkVersion .*/minSdkVersion 26/' android/app/build.gradle
-          # Fix missing assets folder
+          
+          # 3. Force minSdkVersion 26 in the Manifest file directly
+          sed -i 's/android:minSdkVersion="[^"]*"/android:minSdkVersion="26"/' android/app/src/main/AndroidManifest.xml
+          
+          # 4. Fix missing assets folder
           mkdir -p assets
           touch assets/.gitkeep
 
