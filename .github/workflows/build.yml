@@ -14,18 +14,21 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       
-      # Switching to beta channel to get Dart SDK 3.7.2+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'beta'
 
       - name: Build APK
         run: |
+          flutter pub cache clean
           flutter pub get
+          cd android
+          ./gradlew clean
+          cd ..
           flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Beta-Build
+          name: XoDos-Repaired-Build
           path: build/app/outputs/flutter-apk/app-release.apk
