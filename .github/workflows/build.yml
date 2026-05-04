@@ -17,25 +17,22 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Force Global SDK Fix
+      - name: Deep Fix SDK and Assets
         run: |
-          # 1. Generate files
           flutter create --platforms=android .
-          
-          # 2. Force minSdkVersion 26 in the build script
-          sed -i 's/minSdkVersion .*/minSdkVersion 26/' android/app/build.gradle
-          
-          # 3. Force minSdkVersion 26 in the Manifest file directly
-          sed -i 's/android:minSdkVersion="[^"]*"/android:minSdkVersion="26"/' android/app/src/main/AndroidManifest.xml
-          
-          # 4. Fix missing assets folder
-          mkdir -p assets
-          touch assets/.gitkeep
+          # Force 26 in the local.properties which Flutter reads first
+          echo "flutter.minSdkVersion=26" >> android/local.properties
+          # Force it in the build.gradle using a global replace
+          find android -name "build.gradle" -exec sed -i 's/minSdkVersion [0-9]*/minSdkVersion 26/g' {} +
+          # Fix Manifest just in case
+          find android -name "AndroidManifest.xml" -exec sed -i 's/android:minSdkVersion="[0-9]*"/android:minSdkVersion="26"/g' {} +
+          mkdir -p assets && touch assets/.gitkeep
 
       - name: Build Final APK
         run: |
           flutter pub get
-          flutter build apk --release --no-tree-shake-icons
+          # We pass the version directly into the build command as a final override
+          flutter build apk --release --no-tree-shake-icons --min-sdk-version=26
 
       - name: Upload Finished App
         uses: actions/upload-artifact@v4
