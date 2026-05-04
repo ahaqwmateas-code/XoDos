@@ -20,15 +20,24 @@ jobs:
         with:
           channel: 'stable'
           
-      - name: Force Build Logic
+      - name: Global Build Configuration
         run: |
-          # Create missing assets folder to stop that error
           mkdir -p assets
           touch assets/.gitkeep
-          
           flutter create --platforms android --org bin.mt .
-          
-          # Create build.gradle.kts with the NEW SDK 36 and NDK 28 requirements
+
+          # Fix the ROOT build.gradle to include JitPack for ALL plugins
+          cat <<KTS > android/build.gradle.kts
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+                  maven { url = uri("https://jitpack.io") }
+              }
+          }
+          KTS
+
+          # Create the App build.gradle.kts with explicit versions
           cat <<KTS > android/app/build.gradle.kts
           plugins {
               id("com.android.application")
@@ -55,29 +64,24 @@ jobs:
                   }
               }
           }
-          repositories {
-              google()
-              mavenCentral()
-              maven { url = uri("https://jitpack.io") }
-          }
           dependencies {
               implementation("com.github.xodiosx:termux-x11:1.0.5.r7")
               implementation("com.github.xodiosx:avnc:1.0.2")
           }
           KTS
 
-          # Apply the Nuclear Manifest Override
+          # Apply the Manifest Overrides
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           sed -i 's/<manifest/<manifest xmlns:tools="http:\/\/schemas.android.com\/tools"/' $MANIFEST
           sed -i 's/<uses-sdk[^>]*\/>/<uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36" tools:overrideLibrary="com.termux.x11, com.gaurav.avnc, com.example.avnc_flutter, com.example.x11_flutter" \/>/' $MANIFEST
 
-      - name: Build
+      - name: Final Build
         run: |
           flutter pub get
           flutter build apk --release --no-tree-shake-icons --no-shrink
         
-      - name: Upload
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: xodos-final-apk
+          name: xodos-build-success
           path: build/app/outputs/flutter-apk/app-release.apk
