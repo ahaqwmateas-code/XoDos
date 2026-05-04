@@ -1,65 +1,38 @@
-name: Build Flutter APK
-
-on:
-  push:
-    branches: [ master, main ]
-  pull_request:
-    branches: [ master, main ]
-
+name: Build XoDos Fully Functional
+on: [push]
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Java
+      - uses: actions/checkout@v4
+      
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter
+      - name: Setup Flutter (Stable)
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-          cache: true
 
-      - name: Generate Android platform files
-        run: flutter create --platforms=android .
-
-      - name: Force Min SDK 26 and Fix Assets
+      - name: Apply Fixes and Generate Files
         run: |
-          # Increase minSdkVersion to 26 to match termux-x11 requirements
+          flutter create --platforms=android .
+          # Fix the SDK version for termux-x11 compatibility
           sed -i 's/minSdkVersion .*/minSdkVersion 26/' android/app/build.gradle
-          
-          # Create the missing assets directory so the build doesn't complain
+          # Fix missing assets folder
           mkdir -p assets
           touch assets/.gitkeep
 
-      - name: Add JitPack repository
+      - name: Build Final APK
         run: |
-          python3 -c '
-          import os
-          f = "android/settings.gradle.kts"
-          if os.path.exists(f):
-              with open(f, "r") as file:
-                  c = file.read()
-              new_line = "maven { url = uri(\"https://jitpack.io\") }\n        mavenCentral()"
-              c = c.replace("mavenCentral()", new_line)
-              with open(f, "w") as file:
-                  file.write(c)
-          '
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
 
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build Release APK
-        run: flutter build apk --release --no-tree-shake-icons
-
-      - name: Upload APK
+      - name: Upload Finished App
         uses: actions/upload-artifact@v4
         with:
-          name: release-apk
+          name: XoDos-Final-APK
           path: build/app/outputs/flutter-apk/app-release.apk
