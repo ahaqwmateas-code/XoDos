@@ -3,8 +3,6 @@ name: Flutter Build APK
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
 
 jobs:
   build:
@@ -15,9 +13,11 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+      
+      # Upgrading Flutter to a newer version to get Dart 3.7+
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
+          flutter-version: '3.29.0'
           channel: 'stable'
 
       - name: Build APK
@@ -28,5 +28,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Final-Build
+          name: XoDos-Updated-SDK
           path: build/app/outputs/flutter-apk/app-release.apk
