@@ -19,17 +19,21 @@ jobs:
         with:
           channel: 'master'
 
-      - name: Repair and Build
+      - name: Repair, Configure JitPack, and Build
         run: |
-          # Recreate the missing platform files on the runner
+          # 1. Recreate platform files
           flutter create --platforms=android .
           
-          # Build the APK
+          # 2. Inject JitPack into the newly created settings.gradle.kts
+          # This is the "Magic Fix" for the missing com.github files
+          sed -i '/mavenCentral()/a \        maven { url = uri("https://jitpack.io") }' android/settings.gradle.kts
+          
+          # 3. Build the APK
           flutter pub get
           flutter build apk --release --tree-shake-icons
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Repaired-Build
+          name: XoDos-Final-Build
           path: build/app/outputs/flutter-apk/app-release.apk
