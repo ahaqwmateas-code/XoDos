@@ -16,15 +16,17 @@ jobs:
       
       - uses: subosito/flutter-action@v2
         with:
-          channel: 'master' # This gets you the 3.7+ SDK you need
+          channel: 'master'
 
       - name: Build APK
         run: |
+          # This forces the project to update its old Android files
           flutter pub get
-          flutter build apk --release
+          flutter build apk --release --no-pub --tree-shake-icons
+        continue-on-error: false
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: XoDos-Final-Build
+          name: XoDos-Master-Build
           path: build/app/outputs/flutter-apk/app-release.apk
