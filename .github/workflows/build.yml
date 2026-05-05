@@ -1,0 +1,49 @@
+name: Build XoDos
+on:
+  push:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Configure Android Project
+        run: |
+          flutter create --platforms=android .
+          cat << 'INNER_EOF' > android/app/build.gradle
+          apply plugin: 'com.android.application'
+          apply plugin: 'kotlin-android'
+          apply from: "$flutterSdkPath/packages/flutter_tools/gradle/flutter.gradle"
+
+          android {
+              namespace "com.termux.x11"
+              compileSdkVersion 34
+              defaultConfig {
+                  applicationId "com.termux.x11"
+                  minSdkVersion 26
+                  targetSdkVersion 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          INNER_EOF
+          echo "flutter.minSdkVersion=26" > android/local.properties
+          mkdir -p assets && touch assets/.gitkeep
+
+      - name: Build APK
+        run: |
+          flutter pub get
+          flutter build apk --release --no-tree-shake-icons
+          
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XoDos-Final-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
